@@ -1,16 +1,7 @@
----
-title: "Prediction Assignment: Exercise Performance"
-author: "Course Project"
-output:
-  html_document:
-    toc: true
-    toc_depth: 2
-    number_sections: true
----
 
 ## Introduction
 
-The aim of this project is to predict how well a participant performed a barbell lift. The response variable is `classe`, with five possible labels: A, B, C, D, and E. The data contain measurements from accelerometers on the belt, arm, forearm, and dumbbell.
+The aim of this project is to predict how well a participant performed a barbell lift.
 
 ## Data preparation
 
@@ -91,15 +82,15 @@ cv_model <- train(
 cv_model$results
 ```
 
-## Results and expected error
+## Results 
 
-In the completed run, the holdout accuracy was **99.72%**, which corresponds to an estimated error of **0.28%** (11 incorrect predictions among 3,925 validation cases). The five-fold cross-validation accuracy was **99.64%** on average, with a standard deviation of about **0.08 percentage points**. This gives a cross-validation error estimate of about **0.36%**. The two results are close, which suggests that the model is reasonably stable on data similar to the training set.
+In the completed run, the holdout accuracy was 99.72%, which corresponds to an estimated error of 0.28% (11 incorrect predictions among 3,925 validation cases). The five-fold cross-validation accuracy was **99.64%** on average, with a standard deviation of about 0.08 percentage points. This gives a cross-validation error estimate of about 0.36%. The two results are close, which suggests that the model is reasonably stable on data similar to the training set.
 
 The most useful variables in the fitted forest included belt roll and yaw, forearm pitch, and dumbbell magnetometer measurements. This is reasonable because the position and movement of the body and dumbbell help distinguish correct and incorrect lifting styles.
 
 The error estimates are not a guarantee of performance on every new participant. Measurements from the same people and recording sessions can be related, so a separate study with completely new participants would give a stronger test of generalisation.
 
-## Final predictions
+## Final 
 
 The final model below uses all labelled observations and writes one predicted class for each of the 20 test rows. The output file can be used for the course prediction quiz.
 
@@ -118,6 +109,4 @@ write.csv(prediction_file, "pml-predictions-from-R.csv", row.names = FALSE)
 prediction_file
 ```
 
-## Conclusion
 
-The Random Forest model predicted exercise performance with high accuracy in the validation tests. Removing identifiers and mostly empty variables helped focus the analysis on actual movement measurements. Cross-validation provided an additional check on the model. The final predictions are saved in a CSV file for the 20 test cases.
