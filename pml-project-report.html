@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prediction Assignment: Exercise Performance</title>
+<style>
+body{font-family:Arial,Helvetica,sans-serif;line-height:1.6;max-width:900px;margin:36px auto;padding:0 22px;color:#222}
+h1,h2{color:#163a5f}h1{border-bottom:2px solid #ddd;padding-bottom:10px}
+table{border-collapse:collapse;margin:14px 0;min-width:300px}th,td{border:1px solid #ccc;padding:7px 14px;text-align:left}th{background:#f1f4f7}
+.note{background:#f7f8fa;padding:12px 16px;border-left:4px solid #6b879e}
+code{background:#f3f3f3;padding:2px 4px}.small{color:#555;font-size:.93em}
+</style></head><body>
+<h1>Prediction Assignment: Exercise Performance</h1>
+<p class="small">Peer-review project report | Prediction of barbell-lift exercise manner</p>
+<h2>1. Aim</h2>
+<p>The goal of this project is to predict how correctly a participant performed a barbell lift. The response variable is <code>classe</code>, with five labels: A, B, C, D, and E. The data contain measurements from accelerometers on the belt, arm, forearm, and dumbbell.</p>
+<h2>2. Data preparation</h2>
+<p>The training data contain 19,622 labelled observations. The test data contain 20 observations to be predicted. I removed row numbers, participant names, timestamps, window labels, and other administrative fields. These columns do not directly describe the movement and may allow the model to learn the recording session instead of the exercise technique.</p>
+<p>I kept numeric sensor variables available in both files with at least 95% non-missing values. This produced 52 predictors. The selected measurements cover the belt, arm, dumbbell, and forearm. Any remaining missing values were replaced with the training median for that variable.</p>
+<h2>3. Model selection</h2>
+<p>I used a Random Forest classifier. It combines the results of many decision trees built from different samples and subsets of variables. This is useful for sensor data because the relationship between measurements and exercise type may be non-linear. Random Forest also provides variable-importance scores.</p>
+<h2>4. Validation</h2>
+<p>I used a stratified 80/20 split for training and validation. This keeps the five class proportions similar in both groups. I also used five-fold cross-validation to check the stability of the model.</p>
+<table><tr><th>Evaluation</th><th>Accuracy</th><th>Estimated error</th></tr>
+<tr><td>20% holdout (3,925 cases)</td><td>99.72%</td><td>0.28% (11 errors)</td></tr>
+<tr><td>Five-fold cross-validation (mean)</td><td>99.64%</td><td>0.36%</td></tr>
+</table>
+<p>The five-fold accuracy had a standard deviation of about 0.08 percentage points. The close holdout and cross-validation results suggest that the model is stable for data similar to the training set.</p>
+<h2>5. Important variables and limitations</h2>
+<p>Some of the most useful measurements were belt roll, belt yaw, forearm pitch, and dumbbell magnetometer values. These measurements describe body and equipment position, so they help separate the different lifting styles.</p>
+<p>These error estimates do not guarantee the same performance for completely new people. Rows from the same participants or recording sessions may be related. A validation study using participants who were not included in training would provide a stronger test of generalisation.</p>
+<h2>6. Final test predictions</h2>
+<p>The final Random Forest model was trained on all labelled observations and used to predict the 20 test rows.</p>
+<table><tr><th>Problem ID</th><th>Predicted class</th></tr><tr><td>1</td><td><strong>B</strong></td></tr>
+<tr><td>2</td><td><strong>A</strong></td></tr>
+<tr><td>3</td><td><strong>B</strong></td></tr>
+<tr><td>4</td><td><strong>A</strong></td></tr>
+<tr><td>5</td><td><strong>A</strong></td></tr>
+<tr><td>6</td><td><strong>E</strong></td></tr>
+<tr><td>7</td><td><strong>D</strong></td></tr>
+<tr><td>8</td><td><strong>B</strong></td></tr>
+<tr><td>9</td><td><strong>A</strong></td></tr>
+<tr><td>10</td><td><strong>A</strong></td></tr>
+<tr><td>11</td><td><strong>B</strong></td></tr>
+<tr><td>12</td><td><strong>C</strong></td></tr>
+<tr><td>13</td><td><strong>B</strong></td></tr>
+<tr><td>14</td><td><strong>A</strong></td></tr>
+<tr><td>15</td><td><strong>E</strong></td></tr>
+<tr><td>16</td><td><strong>E</strong></td></tr>
+<tr><td>17</td><td><strong>A</strong></td></tr>
+<tr><td>18</td><td><strong>B</strong></td></tr>
+<tr><td>19</td><td><strong>B</strong></td></tr>
+<tr><td>20</td><td><strong>B</strong></td></tr></table>
+<h2>7. Conclusion</h2>
+<p>The Random Forest model predicted exercise performance with high accuracy in the validation tests. Removing identifiers and mostly empty columns helped focus the analysis on actual movement measurements. Cross-validation provided an additional check. The final predictions are saved in <code>pml-predictions.csv</code>.</p>
+<h2>Appendix: Reproducible analysis</h2>
+<p>See <code>pml-project-report.Rmd</code> for the R code that reads the two CSV files, prepares the predictors, runs the validation, fits the final Random Forest model, and writes a CSV containing the 20 predictions. Keep the R Markdown file and the two source CSV files in the same working directory before knitting it to HTML.</p>
+</body></html>

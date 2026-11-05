@@ -1,0 +1,123 @@
+---
+title: "Prediction Assignment: Exercise Performance"
+author: "Course Project"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+---
+
+## Introduction
+
+The aim of this project is to predict how well a participant performed a barbell lift. The response variable is `classe`, with five possible labels: A, B, C, D, and E. The data contain measurements from accelerometers on the belt, arm, forearm, and dumbbell.
+
+## Data preparation
+
+I used the training file to build the model and the testing file for the 20 final predictions. I removed identifiers and administrative fields such as row number, participant name, timestamps, and window number. These fields do not directly measure the exercise movement and could make the model depend on the recording session instead of the movement itself.
+
+I kept numeric sensor variables that were present in both files and had at least 95% non-missing values in each file. This gave 52 sensor predictors. The selected variables are the measurements from the belt, arm, dumbbell, and forearm. Any remaining missing values are replaced with the median of the corresponding training variable.
+
+```{r setup, message=FALSE, warning=FALSE}
+library(caret)
+library(randomForest)
+set.seed(42)
+
+training <- read.csv("pml-training.csv", na.strings = c("", "NA"),
+                     stringsAsFactors = FALSE, check.names = TRUE)
+testing  <- read.csv("pml-testing.csv", na.strings = c("", "NA"),
+                     stringsAsFactors = FALSE, check.names = TRUE)
+training$classe <- factor(training$classe)
+
+excluded <- c("X", "Unnamed..0", "user_name", "raw_timestamp_part_1",
+              "raw_timestamp_part_2", "cvtd_timestamp", "new_window",
+              "num_window", "problem_id", "classe")
+common <- intersect(setdiff(names(training), excluded), names(testing))
+
+keep <- vapply(common, function(v) {
+  x <- suppressWarnings(as.numeric(as.character(training[[v]])))
+  z <- suppressWarnings(as.numeric(as.character(testing[[v]])))
+  mean(!is.na(x)) >= 0.95 && mean(!is.na(z)) >= 0.95
+}, logical(1))
+predictors <- common[keep]
+
+for (v in predictors) {
+  training[[v]] <- suppressWarnings(as.numeric(as.character(training[[v]])))
+  testing[[v]]  <- suppressWarnings(as.numeric(as.character(testing[[v]])))
+  med <- median(training[[v]], na.rm = TRUE)
+  training[[v]][is.na(training[[v]])] <- med
+  testing[[v]][is.na(testing[[v]])] <- med
+}
+
+length(predictors)
+```
+
+The selected predictors are listed below.
+
+```{r predictor-list}
+print(predictors)
+```
+
+## Model and validation
+
+I selected a Random Forest classifier. It builds many decision trees using different samples and subsets of variables, then combines their votes. This method works well for complex sensor data and can model non-linear relationships. It also gives a useful measure of variable importance.
+
+I used a stratified 80/20 training-validation split. Stratification keeps the class proportions similar in both sets. I also used five-fold cross-validation to check that performance was stable across different splits. The final model was trained on all labelled rows and used to predict the 20 test cases.
+
+```{r model-validation, message=FALSE, warning=FALSE}
+set.seed(42)
+idx <- createDataPartition(training$classe, p = 0.80, list = FALSE)
+train_part <- training[idx, c(predictors, "classe")]
+valid_part <- training[-idx, c(predictors, "classe")]
+
+mtry_value <- max(1, floor(sqrt(length(predictors))))
+
+set.seed(42)
+holdout_model <- randomForest(
+  x = train_part[, predictors], y = train_part$classe,
+  ntree = 300, mtry = mtry_value, importance = TRUE
+)
+valid_pred <- predict(holdout_model, newdata = valid_part[, predictors])
+confusionMatrix(valid_pred, valid_part$classe)
+
+set.seed(42)
+cv_control <- trainControl(method = "cv", number = 5)
+cv_model <- train(
+  x = training[, predictors], y = training$classe,
+  method = "rf", trControl = cv_control,
+  tuneGrid = data.frame(mtry = mtry_value),
+  ntree = 150, metric = "Accuracy"
+)
+cv_model$results
+```
+
+## Results and expected error
+
+In the completed run, the holdout accuracy was **99.72%**, which corresponds to an estimated error of **0.28%** (11 incorrect predictions among 3,925 validation cases). The five-fold cross-validation accuracy was **99.64%** on average, with a standard deviation of about **0.08 percentage points**. This gives a cross-validation error estimate of about **0.36%**. The two results are close, which suggests that the model is reasonably stable on data similar to the training set.
+
+The most useful variables in the fitted forest included belt roll and yaw, forearm pitch, and dumbbell magnetometer measurements. This is reasonable because the position and movement of the body and dumbbell help distinguish correct and incorrect lifting styles.
+
+The error estimates are not a guarantee of performance on every new participant. Measurements from the same people and recording sessions can be related, so a separate study with completely new participants would give a stronger test of generalisation.
+
+## Final predictions
+
+The final model below uses all labelled observations and writes one predicted class for each of the 20 test rows. The output file can be used for the course prediction quiz.
+
+```{r final-model}
+set.seed(42)
+final_model <- randomForest(
+  x = training[, predictors], y = training$classe,
+  ntree = 500, mtry = mtry_value, importance = TRUE
+)
+final_predictions <- predict(final_model, newdata = testing[, predictors])
+prediction_file <- data.frame(
+  problem_id = testing$problem_id,
+  classe = as.character(final_predictions)
+)
+write.csv(prediction_file, "pml-predictions-from-R.csv", row.names = FALSE)
+prediction_file
+```
+
+## Conclusion
+
+The Random Forest model predicted exercise performance with high accuracy in the validation tests. Removing identifiers and mostly empty variables helped focus the analysis on actual movement measurements. Cross-validation provided an additional check on the model. The final predictions are saved in a CSV file for the 20 test cases.
